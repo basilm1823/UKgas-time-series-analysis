@@ -1,0 +1,123 @@
+---
+title: "MTH6139 Time Series" 
+subtitle: "Time series analysis of UK Natural Gas" 
+author: "Basil Mahmud" 
+date: "Spring term 2025" 
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: journal
+    highlight: pygments
+---
+ 
+```{r, echo=FALSE}
+# This code will display the QMUL logo at the top right of the page
+# Do not change this code
+htmltools::img(src = knitr::image_uri("images/QMlogo.png"),
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; padding:10px; width:20%;')
+```
+
+# **Background**
+
+Natural gas is an integral component of the UK's energy infrastructure, and is key for running the country on a daily basis. As such, the UK relies on natural gas heavily, and this reliance has increased over the years due to economic growth, technological avdancements and growing demand.
+
+
+```{r, echo=FALSE, out.width="62.5%"}
+knitr::include_graphics("images/nattygas123.png")
+```
+
+
+## Why do we need to model this?
+
+There are many reasons why it is important for us to model this. We need to be able to accurately demand forecast and identify trends for better resource allocation, energy regulation and optimising storage and distribution strategies. In addition to this, it is important to have a long term mindset about the UK's reliance on natural gas, some factors that need to be considered are the climate and weather conditions, technology trends such as Artificial intelligence, and the transition to green energy. All of these factors can severely impact our consumption and reliance on natural gas
+
+## Factors that affect gas consumption
+
+Natural gas consumption in the UK is determined by demand, economic activity, government policies, and the transition to green energy. It rises in winter due to heating needs and declines in the summer. Economic growth influences industrial and commercial usage, while policies that promote energy efficiency and carbon reduction have contributed to a decline in gas consumption over the years. The consumption decreases as the UK is investing more into wind, solar and nuclear energy.
+
+# **Time series analysis**
+
+## Decomposition
+We will now analyse the decomposition of the dataset and derive some insights by splitting it up into the significant components which are the observed, trend, seasonality and residual error.
+
+```{r}
+plot(decompose(UKgas))
+```
+
+Observed:
+ Shows the quarterly gas consumption from 1960 to 1986, and we can see that it increases over time due to the rise in natural gas demand and economic growth
+
+Trend:
+ We can see the trend is also steadily increasing, and this can be attributed to more stronger energy infrastructure and increased use by the general population.
+
+Seasonality:
+ We can see a consistent pattern with natural gas consumption for every quarter, in Q1 and Q4 consumption peaks due ot the colder weather and need for heating, and these fluctuations help us understand how the natural gas needs respond to weather conditions.
+ 
+Residuals: 
+ We can see the irregular or random variations that can be explained by unexpected factors such as econoimc shifts and harsh weather conditions. The irregularities cannot be explained by the other components of the decomposition.
+
+## Data frame and analysis 
+```{r}
+library(prophet)
+library(dygraphs)
+gas.df = data.frame(
+  ds=zoo:: as.Date(as.yearmon(time(UKgas))), 
+  y=as.numeric(UKgas)
+)
+```
+
+This piece of code converts the time series UKgas dataset into a dataframe using the function we get from Prophet.
+
+```{r}
+m <- prophet(gas.df)
+```
+
+This creates a forecasting model using the prophet function
+
+```{r}
+future <- make_future_dataframe(m, periods = 8, freq = "month")
+```
+
+This line of code creates a data frame consisting of forecasted consumption 8 months into the future
+
+```{r}
+forecast <- predict(m, future)
+```
+
+This line generates forecasts for future natural gas consumption
+
+```{r}
+dyplot.prophet(m, forecast, xlab="years",ylab="gas consumption")
+```
+
+This graph shows the actual and forecasted data over some time period. The black dots represent the time series data and the blue line represents the forecasted data. This line indicates that gas consumption is expected to increase over the years.The shaded region shows the uncertainty or confidence interval of the predictions.
+
+```{r}
+prophet_plot_components(m,forecast)
+```
+
+The Prophet component plots show long-term trends and seasonal patterns in natural gas consumption. The trend graph shows a steady rise over time, which is due to economic growth, increasing population, and expanding infrastructure. The seasonality graph has predictable fluctuations, with higher consumption in colder months and lower in warmer periods.
+
+## Summary
+```{r}
+linear = lm(y~ds, data=gas.df)
+summary(linear)
+```
+
+From this we can infer the following:
+
+The gas consumption will increase by 0.06514 per unit.
+
+Standard error is 0.00573, which is very low showing very high data precision
+
+The p value 2e-16 is <0.05, which shows that the model is statistically significant, meaning that time impacts gas consumption.
+
+The r-squared value of 0.5494 suggests that time accounts for about 55% of the variation in natural gas consumption, which indicates a moderate fit.
+
+# **References**
+
+UK Historical Gas Data: <https://www.gov.uk/government/statistical-data-sets/historical-gas-data-gas-production-and-consumption-and-fuel-input>
+
+UK Natural Gas Consumption Statistics: <https://www.statista.com/statistics/265393/natural-gas-consumption-in-the-united-kingdom/>
